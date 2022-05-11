@@ -6,7 +6,9 @@ import org.apache.kafka.common.serialization.Serdes
 import org.apache.kafka.common.serialization.Serializer
 import org.apache.kafka.streams.StreamsBuilder
 import org.apache.kafka.streams.kstream.Consumed
+import org.apache.kafka.streams.kstream.KTable
 import org.apache.kafka.streams.kstream.Materialized
+import org.apache.kafka.streams.state.Stores
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.CommandLineRunner
 import org.springframework.kafka.annotation.KafkaListener
@@ -42,14 +44,17 @@ class Topology(
         val messageStream = streamsBuilder
             .stream(props.inputTopic, Consumed.with(KEY_SERDE, PRICE_SERDE))
 
-        val aggregatedPrices = messageStream
+        val aggregatedPrices: KTable<String, CurrentPrices> = messageStream
             .groupByKey()
             .aggregate({ CurrentPrices() }, { _, newPrice, state ->
                 val currentPrice = state.prices[newPrice.selectionId] ?: BigDecimal.ZERO
                 state.prices[newPrice.selectionId] = currentPrice.plus(newPrice.price ?: BigDecimal.ZERO)
 
                 return@aggregate state
-            }, Materialized.with(KEY_SERDE, STATE_SERDE))
+            }, Materialized.`as`<String, CurrentPrices>(Stores.persistentKeyValueStore("aggregated"))
+                .withKeySerde(KEY_SERDE)
+                .withValueSerde(STATE_SERDE)
+            )
 
         aggregatedPrices
             .toStream()

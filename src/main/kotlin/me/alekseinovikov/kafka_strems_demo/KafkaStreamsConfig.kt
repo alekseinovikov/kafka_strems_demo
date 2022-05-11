@@ -5,6 +5,7 @@ import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.common.serialization.Serdes
 import org.apache.kafka.common.serialization.StringDeserializer
 import org.apache.kafka.common.serialization.StringSerializer
+import org.apache.kafka.streams.StreamsConfig
 import org.apache.kafka.streams.StreamsConfig.*
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
@@ -36,6 +37,7 @@ class KafkaStreamsConfig {
         props[BOOTSTRAP_SERVERS_CONFIG] = bootstrapAddress!!
         props[DEFAULT_KEY_SERDE_CLASS_CONFIG] = Serdes.String().javaClass.name
         props[DEFAULT_VALUE_SERDE_CLASS_CONFIG] = Serdes.String().javaClass.name
+        props[STATE_DIR_CONFIG] = System.getProperty("user.dir")
 
         return KafkaStreamsConfiguration(props)
     }
